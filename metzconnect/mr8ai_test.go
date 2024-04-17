@@ -1,19 +1,16 @@
 package metzconnect
 
 import (
-	"os"
 	"testing"
 
 	"github.com/goburrow/modbus"
 )
 
-var address = os.Getenv("ADDRESS")
+func TestMR8AI_AnalogInput(t *testing.T) {
+	mr8ai := MR8AI{modbus.TCPClient(address)}
 
-func TestEWIO2_AnalogInput(t *testing.T) {
-	ewio2 := EWIO2{modbus.TCPClient(address)}
-
-	for i := 1; i <= 3; i++ {
-		voltage, err := ewio2.AnalogInput(i)
+	for i := 1; i <= 8; i++ {
+		voltage, err := mr8ai.AnalogInput(1, i)
 		if err != nil {
 			t.Fatalf("failed to read analog input: %s", err)
 		}
