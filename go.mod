@@ -1,6 +1,6 @@
 module github.com/rydyb/devices
 
-go 1.22.2
+go 1.21.1
 
 require github.com/goburrow/modbus v0.1.0
 
