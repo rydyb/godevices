@@ -16,7 +16,7 @@ func TestOutputs(t *testing.T) {
 	}
 	defer conn.Close()
 
-	ptc10 := PTC10{conn}
+	ptc10 := NewPTC10(conn)
 
 	outputs, err := ptc10.Outputs()
 	if err != nil {

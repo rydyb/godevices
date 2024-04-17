@@ -3,23 +3,27 @@ package srs
 import (
 	"bufio"
 	"fmt"
-	"net"
+	"io"
 	"strconv"
 	"strings"
 )
 
 type PTC10 struct {
-	net.Conn
+	rw io.ReadWriter
 }
 
-func (conn *PTC10) Outputs() (map[string]float64, error) {
-	resp, err := exec(conn, "getOutputs.names")
+func NewPTC10(rw io.ReadWriter) *PTC10 {
+	return &PTC10{rw: rw}
+}
+
+func (d *PTC10) Outputs() (map[string]float64, error) {
+	resp, err := exec(d.rw, "getOutputs.names")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get output names: %s", err)
 	}
 	names := strings.Split(resp, ", ")
 
-	resp, err = exec(conn, "getOutputs")
+	resp, err = exec(d.rw, "getOutputs")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get output values: %s", err)
 	}
@@ -39,13 +43,13 @@ func (conn *PTC10) Outputs() (map[string]float64, error) {
 	return outputs, nil
 }
 
-func exec(conn net.Conn, cmd string) (string, error) {
-	_, err := fmt.Fprintf(conn, cmd+"\r\n")
+func exec(rw io.ReadWriter, cmd string) (string, error) {
+	_, err := fmt.Fprintf(rw, cmd+"\r\n")
 	if err != nil {
 		return "", err
 	}
 
-	reader := bufio.NewReader(conn)
+	reader := bufio.NewReader(rw)
 	out, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
