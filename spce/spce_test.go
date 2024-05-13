@@ -18,18 +18,22 @@ func TestOutputs(t *testing.T) {
 
     s := NewSPCE(conn, "05")
 
-    outputs, err := s.Outputs()
-
+    pressure, err := s.Pressure()
     if err != nil {
-        t.Fatalf("Outputs() returned error: %v", err)
+        t.Fatalf("failed to get pressure: %v", err)
     }
 
-    expectedKeys := []string{"current", "pressure", "voltage"}
-    for _, key := range expectedKeys {
-        value, ok := outputs[key]
-        if !ok {
-            t.Errorf("Outputs() did not return a value for key %s", key)
-        } 
-		fmt.Println(key, ":", value)
+    current, err := s.Current()
+    if err != nil {
+        t.Fatalf("failed to get current: %v", err)
     }
+    
+    voltage, err := s.Voltage()
+    if err != nil {
+        t.Fatalf("failed to get voltage: %v", err)
+    }
+
+    fmt.Printf("Pressure: %v\n", pressure)
+    fmt.Printf("Current: %v\n", current)
+    fmt.Printf("Voltage: %v\n", voltage)   
 }

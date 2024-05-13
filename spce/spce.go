@@ -107,16 +107,11 @@ func (s *SPCE) Exec(cmd string) (string, error) {
 	}
 
 	scanner := bufio.NewScanner(s.rw)
-	scanner.Split(bufio.ScanBytes)
+	scanner.Split(splitAtCarriage)
 	
 	var respBuild strings.Builder
 	for scanner.Scan() {
-		b := scanner.Bytes()
-		// The response ends with a carriage return '\r' (13 (dec) in ASCII)
-		if b[0] == 13 {
-			break
-		}
-		respBuild.Write(b)
+		respBuild.Write(scanner.Bytes())
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -139,4 +134,27 @@ func (s *SPCE) Exec(cmd string) (string, error) {
 	}
 
 	return data, nil
+}
+
+func splitAtCarriage(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	start := 0
+	for i := 0; i < len(data); i++ {
+		if data[i] == '\r' {
+			advance = i + 1
+			token = data[start:i]
+			return
+		}
+	}
+
+	if atEOF {
+		advance = len(data)
+		token = data[start:]
+		return
+	}
+
+	return
 }
