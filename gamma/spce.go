@@ -1,5 +1,4 @@
-// Package spce provides an interface to communicate with a SPCE controller.
-package spce
+package gamma
 
 import (
 	"bufio"
