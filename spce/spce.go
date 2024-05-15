@@ -4,91 +4,97 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 )
 
+type Code uint8
+
+const (
+	Current  Code = 0x0a
+	Pressure Code = 0x0b
+	Voltage  Code = 0x0c
+)
+
+type Status string
+
+const (
+	Ok Status = "OK"
+	Er Status = "ER"
+)
+
 type SPCE struct {
-	rw io.ReadWriter
-	channel string
+	rw      io.ReadWriter
+	channel uint8
 }
 
-// NewSPCE creates a new SPCE instance with the given ReadWriter and channel address in the format of two hexadezimal characters
-// The default channel address is "05"
-func NewSPCE(rw io.ReadWriter, channel string) *SPCE {
-	// If the channel address is not provided, use the default address "05"
-	if channel == "" {
-		channel = "05"
-	}
+// NewSPCE returns a new SPCE instance on a given ReadWriter for the specified channel.
+func NewSPCE(rw io.ReadWriter, channel uint8) *SPCE {
 	return &SPCE{rw: rw, channel: channel}
 }
 
-func (s *SPCE) Current() (float64, error){
-	currentCode := "0A"
-	current, err := s.Get(s.channel, currentCode)
+// Read writes a read command for code c to the SPCE and returns the response data.
+func (s *SPCE) Read(c Code) (string, error) {
+	cmd := fmt.Sprintf("~ %02d %02X ", s.channel, c)
+	cmd = cmd + checksum(cmd[1:]) + "\r"
+
+	_, err := fmt.Fprint(s.rw, cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current value: %s", err)
+		return "", fmt.Errorf("failed writing command to read writer: %s", err)
 	}
-	return current, nil
+
+	scanner := bufio.NewScanner(s.rw)
+	scanner.Split(split)
+
+	if !scanner.Scan() {
+		return "", fmt.Errorf("failed reading to end of command response: %s", scanner.Err())
+	}
+
+	response := scanner.Text()
+
+	status := response[3:5]
+	code := response[6:8]
+	data := response[9 : len(response)-3]
+	csum := response[len(response)-2:]
+
+	if status != string(Ok) {
+		return "", fmt.Errorf("failed to execute command successful (response code: %s)", code)
+	}
+	if csum != checksum(response[:len(response)-2]) {
+		return "", fmt.Errorf("failed checksum of response")
+	}
+
+	return data, nil
 }
 
-func (s *SPCE) Pressure() (float64, error){
-	pressureCode := "0B"
-	pressure, err := s.Get(s.channel, pressureCode)
+func (s *SPCE) ReadFloat(c Code) (float64, error) {
+	data, err := s.Read(c)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pressure value: %s", err)
-	}
-	return pressure, nil
-}
-
-func (s *SPCE) Voltage() (float64, error){
-	voltageCode := "0C"
-	voltage, err := s.Get(s.channel, voltageCode)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get voltage value: %s", err)
-	}
-	return voltage, nil
-}
-
-func (s *SPCE) Get(channel string, commandCode string) (float64, error) {
-	// Send command to controller according to SPCe protocol
-	// ~ <channel> <metric> <checksum>
-	// <channel> is the channel address
-	// <metric> is the metric enconding
-	// <checksum> is the checksum of the command excluding the ~, but including all the spaces
-	cmd := " " + channel + " " + commandCode + " "
-	cmd = "~" + cmd + checksum(cmd)
-	data, err := s.Exec(cmd)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get execute command and read value: %s", err)
+		return 0, err
 	}
 
-	// Remove units if they exist, the response of voltage does not have a unit
-	if strings.HasSuffix(data, "AMPS") {
-		data = strings.TrimSuffix(data, "AMPS")
-	} else if strings.HasSuffix(data, "MBAR") {
-		data = strings.TrimSuffix(data, "MBAR")
-	} else if strings.HasSuffix(data, "Torr") {
-		data = strings.TrimSuffix(data, "Torr")
-		log.Printf("Warning: value is in Torr, should be in mbar")
-	} else if strings.HasSuffix(data, "PA") {
-		data = strings.TrimSuffix(data, "PA")
-		log.Printf("Warning: value is in Pa, should be in mbar")
-	}
-	data = strings.TrimSpace(data)
-
-	value, err := strconv.ParseFloat(data, 64)
-	if err != nil {
-		// Try parsing as an integer if ParseFloat fails
-		valueInt, errInt := strconv.Atoi(data)
-		if errInt != nil {
-			return 0, fmt.Errorf("failed to parse value: %s", err)
+	switch c {
+	case Voltage:
+		value, err := strconv.ParseInt(data, 10, 32)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse voltage as int: %s", err)
 		}
-		value = float64(valueInt)
+		return float64(value), nil
+	case Current:
+		fallthrough
+	case Pressure:
+		parts := strings.Split(data, " ")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("failed splitting response string: %s", data)
+		}
+		value, err := strconv.ParseFloat(parts[0], 64)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse data as float: %s", err)
+		}
+		return value, nil
 	}
 
-	return value, nil
+	return 0, fmt.Errorf("unknown code: %d", c)
 }
 
 func checksum(cmd string) string {
@@ -96,65 +102,17 @@ func checksum(cmd string) string {
 	for _, c := range cmd {
 		sum += int(c)
 	}
-	// return the checksum as a two-digit hexadecimal number
 	return fmt.Sprintf("%02X", sum%256)
 }
 
-func (s *SPCE) Exec(cmd string) (string, error) {
-	_, err := fmt.Fprintf(s.rw, cmd + "\r")
-	if err != nil {
-		return "", err
-	}
-
-	scanner := bufio.NewScanner(s.rw)
-	scanner.Split(splitAtCarriage)
-	
-	var respBuild strings.Builder
-	for scanner.Scan() {
-		respBuild.Write(scanner.Bytes())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	resp := respBuild.String()
-
-	// The response is in the format ~ <address> OK <response_code> <value> <checksum>
-	// address := resp[:2]
-	status := resp[3:5]
-	responseCode := resp[6:8]
-	data := resp[9 : len(resp)-3]
-	checksum := resp[len(resp)-2 :]
-
-	if status != "OK" {
-		return "", fmt.Errorf("failed to execute command with response code %s", responseCode)
-	}
-	if checksum != s.checksum(resp[:len(resp)-2]) {
-		return "", fmt.Errorf("invalid checksum: %s, should have been %s", checksum, s.checksum(resp[:len(resp)-2]))
-	}
-
-	return data, nil
-}
-
-func splitAtCarriage(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	start := 0
+func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	for i := 0; i < len(data); i++ {
 		if data[i] == '\r' {
-			advance = i + 1
-			token = data[start:i]
-			return
+			return i + 1, data[:i], nil
 		}
 	}
-
-	if atEOF {
-		advance = len(data)
-		token = data[start:]
-		return
+	if atEOF && len(data) > 0 {
+		return len(data), data, nil
 	}
-
-	return
+	return 0, nil, nil
 }
