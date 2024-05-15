@@ -19,7 +19,7 @@ func TestRead(t *testing.T) {
 	cm52 := NewCombivacCM52(conn, 3)
 
 	tests := []struct {
-		c Cmd
+		c CMD
 	}{
 		{Pressure},
 		{GasCorrection},
