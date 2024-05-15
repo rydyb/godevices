@@ -1,5 +1,5 @@
 /*
-Send command to controller according to SPCe protocol
+Send command to controller over serial connection according to SPCe protocol
 ~ <channel> <metric> <checksum>
 <channel> is the channel address
 <metric> is the metric enconding
