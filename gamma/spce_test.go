@@ -1,4 +1,4 @@
-package spce
+package gamma
 
 import (
 	"fmt"

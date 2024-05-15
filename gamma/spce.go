@@ -1,12 +1,4 @@
-/*
-Send command to controller over serial connection according to SPCe protocol
-~ <channel> <metric> <checksum>
-<channel> is the channel address
-<metric> is the metric enconding
-<checksum> is the checksum of the command excluding the ~, but including all the spaces
-The response is in the format ~ <address> <status> <response_code> (<value>) <checksum>
-*/
-package spce
+package gamma
 
 import (
 	"bufio"
@@ -33,15 +25,36 @@ const (
 	Er Status = "ER"
 )
 
+// SPCE represents a SPCE controller.
 type SPCE struct {
 	rw      io.ReadWriter
 	channel uint8
 }
 
+// NewSPCE creates a new SPCE controller with the given read writer and channel.
 func NewSPCE(rw io.ReadWriter, channel uint8) *SPCE {
 	return &SPCE{rw: rw, channel: channel}
 }
 
+// Read reads a code from the SPCE controller and returns the data as a string.
+//
+// The read command is expected to follow this format:
+//
+//	~ <channel> <metric> <checksum>
+//
+// - <channel> refers to the channel address.
+// - <metric> refers to the metric encoding.
+// - <checksum> is the checksum of the command, excluding the '~' character but including all spaces.
+//
+// The response from the SPCE controller is expected to be in the following format:
+//
+//	~ <address> <status> <response_code> (<value>) <checksum>
+//
+// - <address> is the address returned by the controller.
+// - <status> indicates the status of the response.
+// - <response_code> is the response code from the controller.
+// - <value> is the data returned by the controller, enclosed in parentheses.
+// - <checksum> is the checksum of the response, excluding the '~' character but including all spaces.
 func (s *SPCE) Read(c Code) (string, error) {
 	cmd := fmt.Sprintf("~ %02d %02X ", s.channel, c)
 	cmd = cmd + checksum(cmd[1:]) + "\r"
@@ -75,6 +88,11 @@ func (s *SPCE) Read(c Code) (string, error) {
 	return data, nil
 }
 
+// ReadFloat reads a code from the SPCE controller and returns the data as a float64.
+//
+// For the Voltage code, the float64 value is the voltage in volts.
+// For the Current code, the float64 value is the current in amperes.
+// For the Pressure code, the float64 value is the pressure in mbars.
 func (s *SPCE) ReadFloat(c Code) (float64, error) {
 	data, err := s.Read(c)
 	if err != nil {
