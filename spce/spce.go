@@ -1,3 +1,11 @@
+/*
+Send command to controller according to SPCe protocol
+~ <channel> <metric> <checksum>
+<channel> is the channel address
+<metric> is the metric enconding
+<checksum> is the checksum of the command excluding the ~, but including all the spaces
+The response is in the format ~ <address> <status> <response_code> (<value>) <checksum>
+*/
 package spce
 
 import (
@@ -8,6 +16,7 @@ import (
 	"strings"
 )
 
+// Code represents the metric code.
 type Code uint8
 
 const (
@@ -16,6 +25,7 @@ const (
 	Voltage  Code = 0x0c
 )
 
+// Status represents the status of the command response.
 type Status string
 
 const (
@@ -28,12 +38,10 @@ type SPCE struct {
 	channel uint8
 }
 
-// NewSPCE returns a new SPCE instance on a given ReadWriter for the specified channel.
 func NewSPCE(rw io.ReadWriter, channel uint8) *SPCE {
 	return &SPCE{rw: rw, channel: channel}
 }
 
-// Read writes a read command for code c to the SPCE and returns the response data.
 func (s *SPCE) Read(c Code) (string, error) {
 	cmd := fmt.Sprintf("~ %02d %02X ", s.channel, c)
 	cmd = cmd + checksum(cmd[1:]) + "\r"
@@ -97,6 +105,7 @@ func (s *SPCE) ReadFloat(c Code) (float64, error) {
 	return 0, fmt.Errorf("unknown code: %d", c)
 }
 
+// checksum calculates the checksum of the command.
 func checksum(cmd string) string {
 	var sum int
 	for _, c := range cmd {
@@ -105,6 +114,7 @@ func checksum(cmd string) string {
 	return fmt.Sprintf("%02X", sum%256)
 }
 
+// split is a bufio.SplitFunc that splits the data at '\r'.
 func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	for i := 0; i < len(data); i++ {
 		if data[i] == '\r' {
