@@ -21,7 +21,7 @@ import (
 type CMD string
 
 const (
-	Pressure  		CMD = "RPV"
+	Pressure		CMD = "RPV"
 	GasCorrection 	CMD = "RGC"
 )
 
