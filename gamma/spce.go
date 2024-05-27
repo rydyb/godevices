@@ -1,3 +1,6 @@
+// gamma package provides a simple interface to communicate with a SPCE controller.
+// The SPCE controller is a device that measures the current, pressure, and voltage of a vacuum system.
+// The package provides a SPCE type that can read the current, pressure, and voltage from the controller.
 package gamma
 
 import (
@@ -61,14 +64,14 @@ func (s *SPCE) Read(c Code) (string, error) {
 
 	_, err := fmt.Fprint(s.rw, cmd)
 	if err != nil {
-		return "", fmt.Errorf("failed writing command to read writer: %s", err)
+		return "", fmt.Errorf("failed to write command to read writer: %s", err)
 	}
 
 	scanner := bufio.NewScanner(s.rw)
 	scanner.Split(split)
 
 	if !scanner.Scan() {
-		return "", fmt.Errorf("failed reading to end of command response: %s", scanner.Err())
+		return "", fmt.Errorf("failed to read to end of command response: %s", scanner.Err())
 	}
 
 	response := scanner.Text()
@@ -79,7 +82,7 @@ func (s *SPCE) Read(c Code) (string, error) {
 	csum := response[len(response)-2:]
 
 	if status != string(Ok) {
-		return "", fmt.Errorf("failed to execute command successful (response code: %s)", code)
+		return "", fmt.Errorf("failed to execute command (response code: %s)", code)
 	}
 	if csum != checksum(response[:len(response)-2]) {
 		return "", fmt.Errorf("failed checksum of response")
@@ -111,7 +114,7 @@ func (s *SPCE) ReadFloat(c Code) (float64, error) {
 	case Pressure:
 		parts := strings.Split(data, " ")
 		if len(parts) != 2 {
-			return 0, fmt.Errorf("failed splitting response string: %s", data)
+			return 0, fmt.Errorf("failed to split response string: %s", data)
 		}
 		value, err := strconv.ParseFloat(parts[0], 64)
 		if err != nil {
@@ -123,7 +126,7 @@ func (s *SPCE) ReadFloat(c Code) (float64, error) {
 	return 0, fmt.Errorf("unknown code: %d", c)
 }
 
-// checksum calculates the checksum of the command.
+// checksum calculates the checksum of a given command.
 func checksum(cmd string) string {
 	var sum int
 	for _, c := range cmd {
