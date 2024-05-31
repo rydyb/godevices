@@ -17,7 +17,7 @@ func (d *EWIO2) AnalogInput(port int) (float64, error) {
 		return 0.0, fmt.Errorf("EWIO2 has only analog inputs 1, 2, 3 not %d", port)
 	}
 
-	bytes, err := d.Client.ReadInputRegisters(0x40+uint16(port), 2)
+	bytes, err := d.Client.ReadInputRegisters(0x46+uint16(port-1), 2)
 	if err != nil {
 		return 0.0, fmt.Errorf("failed to read from modbus: %s", err)
 	}
