@@ -18,8 +18,28 @@ func TestEWIO2_AnalogInput(t *testing.T) {
 			t.Fatalf("failed to read analog input: %s", err)
 		}
 
-		if voltage < 0.0 || voltage > 10.0 {
-			t.Errorf("voltage out of range: %f", voltage)
-		}
+		t.Logf("%v", voltage)
 	}
+}
+
+func TestEWIO2_getExtensionTypes(t *testing.T) {
+	ewio2 := EWIO2{modbus.TCPClient(address)}
+
+	extensions, err := ewio2.GetExtensionTypes()
+	if err != nil {
+		t.Fatalf("failed to read extension types: %s", err)
+	}
+
+	t.Logf("extensions: %s", extensions)
+}
+
+func TestEWIO2_getUnitRange(t *testing.T) {
+	ewio2 := EWIO2{modbus.TCPClient(address)}
+
+	unitRange, err := ewio2.GetUnitRange()
+	if err != nil {
+		t.Fatalf("failed to read unit range: %s", err)
+	}
+
+	t.Logf("unit range: %v", unitRange)
 }

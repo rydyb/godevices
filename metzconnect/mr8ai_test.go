@@ -16,7 +16,8 @@ func TestMR8AI_AnalogInput(t *testing.T) {
 		}
 
 		if voltage < 0.0 || voltage > 10.0 {
-			t.Errorf("voltage out of range: %f", voltage)
+		 	t.Errorf("voltage out of range: %f", voltage)
 		}
+		t.Logf("voltage: %f", voltage)
 	}
 }
