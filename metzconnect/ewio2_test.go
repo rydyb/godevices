@@ -1,6 +1,7 @@
 package metzconnect
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,37 +10,92 @@ import (
 
 var address = os.Getenv("ADDRESS")
 
-func TestEWIO2_AnalogInput(t *testing.T) {
-	ewio2 := EWIO2{modbus.TCPClient(address)}
+var ewio2 = NewEWIO2(modbus.TCPClient(address))
 
-	for i := 1; i <= 3; i++ {
-		voltage, err := ewio2.AnalogInput(i)
-		if err != nil {
-			t.Fatalf("failed to read analog input: %s", err)
+func TestEWIO2_Version(t *testing.T) {
+	version, err := ewio2.Version()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Version: %d", version)
+}
+
+func TestEWIO2_AnalogInputs_Mode(t *testing.T) {
+	ai := ewio2.AnalogInputs()
+
+	for i := 1; i < 4; i++ {
+		t.Run(fmt.Sprintf("E%d", i), func(t *testing.T) {
+			mode, err := ai.Mode(uint8(i))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Mode: %d", mode)
+		})
+	}
+}
+
+func TestEWIO2_AnalogInputs_Unit(t *testing.T) {
+	ai := ewio2.AnalogInputs()
+
+	for i := 1; i < 4; i++ {
+		t.Run(fmt.Sprintf("E%d", i), func(t *testing.T) {
+			unit, err := ai.Unit(uint8(i))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Unit: %s", unit)
+		})
+	}
+}
+
+func TestEWIO2_AnalogInputs_Value(t *testing.T) {
+	ai := ewio2.AnalogInputs()
+
+	for i := 1; i < 4; i++ {
+		t.Run(fmt.Sprintf("E%d", i), func(t *testing.T) {
+			value, err := ai.Value(uint8(i))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Value: %v", value)
+		})
+	}
+}
+
+func TestEWIO2_Extensions(t *testing.T) {
+	extensions, err := ewio2.Extensions()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, extension := range extensions {
+		t.Logf("Extension: %d %v", extension.ID(), extension.Type())
+
+		switch extension.Type() {
+		case ExtensionMR_AI8:
+			t.Run("MR-AI8", func(t *testing.T) {
+				mr8ai, ok := extension.(*MR8AI)
+				if !ok {
+					t.Fatal("invalid extension type")
+				}
+				ais := mr8ai.AnalogInputs()
+
+				for i := 1; i < 9; i++ {
+					t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+						mode, err := ais.Mode(uint8(i))
+						if err != nil {
+							t.Fatal(err)
+						}
+
+						value, err := ais.Value(uint8(i))
+						if err != nil {
+							t.Fatal(err)
+						}
+
+						t.Logf("Value: %v, Mode: %d", value, mode)
+					})
+				}
+
+			})
 		}
-
-		t.Logf("%v", voltage)
 	}
-}
-
-func TestEWIO2_getExtensionTypes(t *testing.T) {
-	ewio2 := EWIO2{modbus.TCPClient(address)}
-
-	extensions, err := ewio2.GetExtensionTypes()
-	if err != nil {
-		t.Fatalf("failed to read extension types: %s", err)
-	}
-
-	t.Logf("extensions: %s", extensions)
-}
-
-func TestEWIO2_getUnitRange(t *testing.T) {
-	ewio2 := EWIO2{modbus.TCPClient(address)}
-
-	unitRange, err := ewio2.GetUnitRange()
-	if err != nil {
-		t.Fatalf("failed to read unit range: %s", err)
-	}
-
-	t.Logf("unit range: %v", unitRange)
 }
