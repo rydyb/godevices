@@ -7,29 +7,29 @@ import (
 )
 
 type EWIO2 struct {
-	modbus.Client
+	analogInput
+	client modbus.Client
 }
 
 func NewEWIO2(client modbus.Client) *EWIO2 {
-	return &EWIO2{Client: client}
+	return &EWIO2{
+		client: client,
+		analogInput: analogInput{
+			client:       client,
+			LowerChannel: 1,
+			UpperChannel: 3,
+			modeOffset:   60,
+			valueOffset:  70,
+		},
+	}
 }
 
 func (d *EWIO2) Version() (int, error) {
-	response, err := d.Client.ReadHoldingRegisters(2, 1)
+	response, err := d.client.ReadHoldingRegisters(2, 1)
 	if err != nil {
 		return -1, fmt.Errorf("failed to read version via modbus: %s", err)
 	}
 	return int(response[1]), nil
-}
-
-func (d *EWIO2) AnalogInputs() *AnalogInputs {
-	return &AnalogInputs{
-		Client:       d.Client,
-		LowerChannel: 1,
-		UpperChannel: 3,
-		modeOffset:   60,
-		valueOffset:  70,
-	}
 }
 
 type ExtensionType uint8
@@ -49,7 +49,7 @@ const (
 )
 
 type Extension interface {
-	ID() uint16
+	ID() int
 	Type() ExtensionType
 }
 
@@ -57,7 +57,7 @@ func (d *EWIO2) Extensions() ([]Extension, error) {
 	extensions := []Extension{}
 
 	for i := 1; i < 8; i++ {
-		response, err := d.Client.ReadHoldingRegisters(uint16(i*100), 1)
+		response, err := d.client.ReadHoldingRegisters(uint16(i*100), 1)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read extension type via modbus: %s", err)
 		}
@@ -67,7 +67,7 @@ func (d *EWIO2) Extensions() ([]Extension, error) {
 		case ExtensionUnknown:
 			continue
 		case ExtensionMR_AI8:
-			extensions = append(extensions, NewMR8AI(d.Client, uint16(i)))
+			extensions = append(extensions, NewMR8AI(d.client, i))
 		default:
 			return nil, fmt.Errorf("unsupported extension type: %d", extension)
 		}
@@ -76,29 +76,28 @@ func (d *EWIO2) Extensions() ([]Extension, error) {
 	return extensions, nil
 }
 
-type MR8AI struct {
-	id uint16
-	modbus.Client
+type MRAI8 struct {
+	analogInput
+	id int
 }
 
-func NewMR8AI(client modbus.Client, id uint16) *MR8AI {
-	return &MR8AI{id: id, Client: client}
+func NewMR8AI(client modbus.Client, id int) *MRAI8 {
+	return &MRAI8{
+		id: id,
+		analogInput: analogInput{
+			client:       client,
+			LowerChannel: 1,
+			UpperChannel: 8,
+			modeOffset:   uint16(60 + 100*id),
+			valueOffset:  uint16(40 + 100*id),
+		},
+	}
 }
 
-func (d *MR8AI) ID() uint16 {
+func (d *MRAI8) ID() int {
 	return d.id
 }
 
-func (d *MR8AI) Type() ExtensionType {
+func (d *MRAI8) Type() ExtensionType {
 	return ExtensionMR_AI8
-}
-
-func (d *MR8AI) AnalogInputs() *AnalogInputs {
-	return &AnalogInputs{
-		Client:       d.Client,
-		LowerChannel: 1,
-		UpperChannel: 8,
-		modeOffset:   160,
-		valueOffset:  140,
-	}
 }

@@ -75,27 +75,27 @@ func (err ChannelOutOfRangeError) Error() string {
 	return fmt.Sprintf("channel %d out of range [%d, %d]", err.Channel, err.LowerLimit, err.UpperLimit)
 }
 
-type AnalogInputs struct {
-	modbus.Client
+type analogInput struct {
+	client       modbus.Client
 	LowerChannel uint8
 	UpperChannel uint8
 	modeOffset   uint16
 	valueOffset  uint16
 }
 
-func (ai *AnalogInputs) Mode(channel uint8) (AnalogInputMode, error) {
+func (ai *analogInput) Mode(channel uint8) (AnalogInputMode, error) {
 	if channel < ai.LowerChannel || channel > ai.UpperChannel {
 		return Inactive, ChannelOutOfRangeError{channel, ai.LowerChannel, ai.UpperChannel}
 	}
 
-	response, err := ai.Client.ReadInputRegisters(ai.modeOffset+uint16(channel-1), 1)
+	response, err := ai.client.ReadInputRegisters(ai.modeOffset+uint16(channel-1), 1)
 	if err != nil {
 		return Inactive, fmt.Errorf("failed to read mode via modbus: %s", err)
 	}
 	return AnalogInputMode(response[1]), nil
 }
 
-func (ai *AnalogInputs) Unit(channel uint8) (AnalogInputUnit, error) {
+func (ai *analogInput) Unit(channel uint8) (AnalogInputUnit, error) {
 	mode, err := ai.Mode(channel)
 	if err != nil {
 		return UnitNone, err
@@ -117,12 +117,12 @@ func (ai *AnalogInputs) Unit(channel uint8) (AnalogInputUnit, error) {
 	return UnitNone, fmt.Errorf("unsupported mode: %d", mode)
 }
 
-func (ai *AnalogInputs) Value(channel uint8) (float32, error) {
+func (ai *analogInput) Value(channel uint8) (float32, error) {
 	if channel < ai.LowerChannel || channel > ai.UpperChannel {
 		return 0.0, ChannelOutOfRangeError{channel, ai.LowerChannel, ai.UpperChannel}
 	}
 
-	response, err := ai.Client.ReadInputRegisters(ai.valueOffset+uint16(2*(channel-1)), 2)
+	response, err := ai.client.ReadInputRegisters(ai.valueOffset+uint16(2*(channel-1)), 2)
 	if err != nil {
 		return 0.0, fmt.Errorf("failed to read value via modbus: %s", err)
 	}
