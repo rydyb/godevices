@@ -89,7 +89,7 @@ func NewMR8AI(client modbus.Client, id int) *MRAI8 {
 			LowerChannel: 1,
 			UpperChannel: 8,
 			modeOffset:   uint16(60 + 100*id),
-			valueOffset:  uint16(40 + 100*id),
+			valueOffset:  uint16(70 + 100*id),
 		},
 	}
 }
@@ -100,4 +100,30 @@ func (d *MRAI8) ID() int {
 
 func (d *MRAI8) Type() ExtensionType {
 	return ExtensionMR_AI8
+}
+
+type MRCI4 struct {
+	analogInput
+	id int
+}
+
+func NewMRCI4(client modbus.Client, id int) *MRCI4 {
+	return &MRCI4{
+		id: id,
+		analogInput: analogInput{
+			client:       client,
+			LowerChannel: 1,
+			UpperChannel: 4,
+			modeOffset:   uint16(60 + 100*id),
+			valueOffset:  uint16(70 + 100*id),
+		},
+	}
+}
+
+func (d *MRCI4) ID() int {
+	return d.id
+}
+
+func (d *MRCI4) Type() ExtensionType {
+	return ExtensionMR_CI4
 }

@@ -131,7 +131,35 @@ func (ai *analogInput) Value(channel uint8) (float32, error) {
 	if err != nil {
 		return 0.0, fmt.Errorf("failed to parse value as float16: %s", err)
 	}
-	return value, nil
+
+	unit, err := ai.Unit(channel)
+	if err != nil {
+		return 0.0, err
+	}
+
+	switch unit {
+	case UnitPercent:
+		return value * 100.0, nil
+	case UnitVolt:
+		return value, nil
+	case UnitOhm:
+		return value, nil
+	case UnitCelsius:
+		return ai.convertValueToCelsius(value, channel)
+	}
+
+	return 0.0, fmt.Errorf("unsupported unit: %s", unit)
+}
+
+func (ai *analogInput) convertValueToCelsius(value float32, channel uint8) (float32, error) {
+	mode, err := ai.Mode(channel)
+	if err != nil {
+		return 0.0, err
+	}
+	switch mode {
+	default:
+		return value, nil
+	}
 }
 
 func readFloat16(b []byte) (float32, error) {

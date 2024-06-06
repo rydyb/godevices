@@ -87,7 +87,30 @@ func TestEWIO2_Extensions(t *testing.T) {
 						t.Logf("Value: %v, Mode: %d", value, mode)
 					})
 				}
+				
+			})
+		case ExtensionMR_CI4:
+			t.Run("MR-CI4", func(t *testing.T) {
+				mrci4, ok := extension.(*MRCI4)
+				if !ok {
+					t.Fatal("invalid extension type")
+				}
 
+				for i := 1; i < 5; i++ {
+					t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+						mode, err := mrci4.Mode(uint8(i))
+						if err != nil {
+							t.Fatal(err)
+						}
+
+						value, err := mrci4.Value(uint8(i))
+						if err != nil {
+							t.Fatal(err)
+						}
+
+						t.Logf("Value: %v, Mode: %d", value, mode)
+					})
+				}
 			})
 		}
 	}
