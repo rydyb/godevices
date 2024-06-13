@@ -84,10 +84,10 @@ func TestEWIO2_Extensions(t *testing.T) {
 							t.Fatal(err)
 						}
 
-						t.Logf("Value: %v, Mode: %d", value, mode)
+						t.Logf("Value: %v, Mode: %d for %s", value, mode, mrai8.Type())
 					})
 				}
-				
+
 			})
 		case ExtensionMR_CI4:
 			t.Run("MR-CI4", func(t *testing.T) {
@@ -108,7 +108,7 @@ func TestEWIO2_Extensions(t *testing.T) {
 							t.Fatal(err)
 						}
 
-						t.Logf("Value: %v, Mode: %d", value, mode)
+						t.Logf("Value: %v, Mode: %d for %s", value, mode, mrci4.Type())
 					})
 				}
 			})

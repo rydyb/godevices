@@ -48,6 +48,21 @@ const (
 	ExtensionMR_CI4
 )
 
+func (t ExtensionType) String() string {
+	return []string{
+		"Unknown",
+		"DO4",
+		"DI4",
+		"DI10",
+		"SI4",
+		"DIO4_2",
+		"AO4",
+		"AOP4",
+		"AI8",
+		"CI4",
+	}[t]
+}
+
 type Extension interface {
 	ID() int
 	Type() ExtensionType
