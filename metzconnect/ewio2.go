@@ -48,6 +48,27 @@ const (
 	ExtensionMR_CI4
 )
 
+var extensionTypeNames = map[ExtensionType]string{
+	ExtensionUnknown:  "Unknown",
+	ExtensionMR_DO4:   "DO4",
+	ExtensionMR_TO4:   "TO4",
+	ExtensionMR_DI4:   "DI4",
+	ExtensionMR_DI10:  "DI10",
+	ExtensionMR_SI4:   "SI4",
+	ExtensionMR_DIO4_2: "DIO4_2",
+	ExtensionMR_AO4:   "AO4",
+	ExtensionMR_AOP4:  "AOP4",
+	ExtensionMR_AI8:   "AI8",
+	ExtensionMR_CI4:   "CI4",
+}	
+
+func (t ExtensionType) String() string {
+	if name, ok := extensionTypeNames[t]; ok {
+		return name
+	}
+	return "Unknown"
+}
+
 type Extension interface {
 	ID() int
 	Type() ExtensionType
