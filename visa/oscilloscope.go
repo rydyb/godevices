@@ -1,10 +1,11 @@
 package visa
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/rydyb/godevices/internal/telnet"
 )
 
 type Oscilloscope struct {
@@ -16,7 +17,7 @@ func NewOscilloscope(rw io.ReadWriter) *Oscilloscope {
 }
 
 func (d *Oscilloscope) Identity() (string, error) {
-	out, err := exec(d.rw, "*idn?")
+	out, err := telnet.Exec(d.rw, "*idn?")
 	if err != nil {
 		return "", fmt.Errorf("failed to query identity: %w", err)
 	}
@@ -24,7 +25,7 @@ func (d *Oscilloscope) Identity() (string, error) {
 }
 
 func (d *Oscilloscope) MeasurementList() ([]string, error) {
-	out, err := exec(d.rw, "MEASUrement:LIST?")
+	out, err := telnet.Exec(d.rw, "MEASUrement:LIST?")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query measurement list: %w", err)
 	}
@@ -32,7 +33,7 @@ func (d *Oscilloscope) MeasurementList() ([]string, error) {
 }
 
 func (d *Oscilloscope) measurementValue(name string) (string, error) {
-	out, err := exec(d.rw, fmt.Sprintf("MEASUrement:%s:VALue?", name))
+	out, err := telnet.Exec(d.rw, fmt.Sprintf("MEASUrement:%s:VALue?", name))
 	if err != nil {
 		return "", fmt.Errorf("failed to query measurement value: %w", err)
 	}
@@ -54,19 +55,4 @@ func (d *Oscilloscope) Measurements() (map[string]string, error) {
 		measurements[name] = value
 	}
 	return measurements, nil
-}
-
-func exec(rw io.ReadWriter, cmd string) (string, error) {
-	_, err := fmt.Fprintf(rw, cmd+"\r\n")
-	if err != nil {
-		return "", err
-	}
-
-	reader := bufio.NewReader(rw)
-	out, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(out), nil
 }

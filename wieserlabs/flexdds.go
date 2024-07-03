@@ -1,13 +1,11 @@
 package wieserlabs
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"net"
-	"strings"
 
 	"github.com/rydyb/godevices/analogdevices/ad9910"
+	"github.com/rydyb/godevices/internal/telnet"
 )
 
 // FlexDDSSlot represents a slot of a FlexDDS.
@@ -23,7 +21,7 @@ func NewFlexDDSSlot(host string, slot uint8, clock float64) (*FlexDDSSlot, error
 		return nil, fmt.Errorf("failed to connect to %s: %w", host, err)
 	}
 
-	out, err := exec(conn, fmt.Sprintf("75f4a4e10dd4b6b%d", slot))
+	out, err := telnet.Exec(conn, fmt.Sprintf("75f4a4e10dd4b6b%d", slot))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send authentication token: %w", err)
 	}
@@ -42,13 +40,13 @@ func (d *FlexDDSSlot) Singletone(channel uint8, logAmplitudeScale, frequency flo
 	asf := ad9910.LogarithmicAmplitudeScaleToASF(logAmplitudeScale)
 	ftw := ad9910.FrequencyToFTW(frequency, d.clock)
 
-	if _, err := exec(d.conn, fmt.Sprintf("dcp %d spi:cfr2=0x01400820", channel)); err != nil {
+	if _, err := telnet.Exec(d.conn, fmt.Sprintf("dcp %d spi:cfr2=0x01400820", channel)); err != nil {
 		return fmt.Errorf("failed to configure CFR2 register: %w", err)
 	}
-	if _, err := exec(d.conn, fmt.Sprintf("dcp %d spi:stp0=0x%x0000%x", channel, asf, ftw)); err != nil {
+	if _, err := telnet.Exec(d.conn, fmt.Sprintf("dcp %d spi:stp0=0x%x0000%x", channel, asf, ftw)); err != nil {
 		return fmt.Errorf("failed to configure STP0 register: %w", err)
 	}
-	if _, err := exec(d.conn, fmt.Sprintf("dcp %d update:u", channel)); err != nil {
+	if _, err := telnet.Exec(d.conn, fmt.Sprintf("dcp %d update:u", channel)); err != nil {
 		return fmt.Errorf("failed to update dds: %w", err)
 	}
 
@@ -58,19 +56,4 @@ func (d *FlexDDSSlot) Singletone(channel uint8, logAmplitudeScale, frequency flo
 // Close the connection.
 func (d *FlexDDSSlot) Close() error {
 	return d.conn.Close()
-}
-
-func exec(rw io.ReadWriter, cmd string) (string, error) {
-	_, err := fmt.Fprintf(rw, cmd+"\r\n")
-	if err != nil {
-		return "", err
-	}
-
-	reader := bufio.NewReader(rw)
-	out, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(out), nil
 }
