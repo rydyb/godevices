@@ -7,6 +7,7 @@ require (
 	github.com/goburrow/modbus v0.1.0
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/stretchr/testify v1.8.4
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 )
 
 require (
