@@ -5,7 +5,8 @@ import (
 )
 
 var cli struct {
-	Measure Measure `cmd:"" help:"Measures a quantity."`
+	Print   Print   `cmd:"" help:"Prints a measured quantity."`
+	Serve   Serve   `cmd:"" help:"Starts a http server with REST API."`
 	Version Version `cmd:"" help:"Prints the version of the wavemeter."`
 }
 

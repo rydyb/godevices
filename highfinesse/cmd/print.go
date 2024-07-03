@@ -6,11 +6,11 @@ import (
 	"github.com/rydyb/godevices/highfinesse"
 )
 
-type Measure struct {
+type Print struct {
 	Quantity string `arg:"" type:"string" enum:"wavelength,frequency,pressure,temperature" help:"Measure wavelength or frequency."`
 }
 
-func (cmd *Measure) Run() error {
+func (cmd *Print) Run() error {
 	channels := highfinesse.Channels()
 
 	switch cmd.Quantity {
