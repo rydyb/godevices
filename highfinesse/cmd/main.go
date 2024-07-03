@@ -1,14 +1,16 @@
 package main
 
 import (
-	"log"
-	"syscall"
+	"github.com/alecthomas/kong"
 )
 
+var cli struct {
+	Measure Measure `cmd:"" help:"Measures a quantity."`
+	Version Version `cmd:"" help:"Prints the version of the wavemeter."`
+}
+
 func main() {
-	wlmData, err := syscall.LoadDLL("wlmData.dll")
-	if err != nil {
-		log.Fatalf("Error loading wlmData.dll: %v", err)
-	}
-	defer syscall.FreeLibrary(wlmData.Handle)
+	ctx := kong.Parse(&cli)
+	err := ctx.Run()
+	ctx.FatalIfErrorf(err)
 }
