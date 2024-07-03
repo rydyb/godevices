@@ -1,0 +1,27 @@
+on:
+  release:
+    types:
+      - created
+jobs:
+  releases-control:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos:
+          - windows
+        goarch:
+          - amd64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: wangyoucao577/go-release-action@v1
+        env:
+          CGO_ENABLED: 1
+          CC: /usr/bin/x86_64-w64-mingw32-gcc
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pre_command: apt-get update && apt-get install --no-install-recommends -y gcc-mingw-w64-x86-64
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          project_path: ./highfinesse/cmd
+          binary_name: wavemeter
