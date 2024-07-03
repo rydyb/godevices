@@ -1,3 +1,3 @@
-# Devices
+# godevices
 
-Clients for devices we use in the lab.
+Go device interface repository for devices used in our lab.
