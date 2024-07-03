@@ -7,7 +7,7 @@ import (
 
 func TestChannels(t *testing.T) {
 	n := Channels()
-	if n < 0 {
+	if n == 0 {
 		t.Fatalf("failed measuring channels")
 	}
 	t.Logf("measured channels: %d", n)
