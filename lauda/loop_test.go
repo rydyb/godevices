@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var address = "10.163.103.226:4196"
+var address = os.Getenv("ADDRESS")
 
 func TestLoopRead(t *testing.T) {
 	conn, err := net.Dial("tcp", address)
