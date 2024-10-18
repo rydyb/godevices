@@ -27,7 +27,7 @@ func NewLoop(rw io.ReadWriter) *Loop {
 func (loop *Loop) Read() (float64, error) {
 	resp, err := telnet.Exec(loop.rw, outflowTemp)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get output names: %s", err)
+		return 0, fmt.Errorf("failed to get output: %s", err)
 	}
 	return strconv.ParseFloat(resp, 64)
 }
