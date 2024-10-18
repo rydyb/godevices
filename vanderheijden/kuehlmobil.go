@@ -1,4 +1,4 @@
-package kuehlmobil
+package vanderheijden
 
 import (
 	"fmt"
