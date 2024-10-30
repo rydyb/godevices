@@ -83,6 +83,8 @@ func (d *EWIO2) Extensions() ([]Extension, error) {
 			continue
 		case ExtensionMR_AI8:
 			extensions = append(extensions, NewMR8AI(d.client, i))
+		case ExtensionMR_CI4:
+			extensions = append(extensions, NewMRCI4(d.client, i))
 		default:
 			return nil, fmt.Errorf("unsupported extension type: %d", extension)
 		}
